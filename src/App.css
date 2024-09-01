@@ -36,6 +36,12 @@ h1 {
     font-size: 1.5rem;
 }
 
+.weather-input h2 {
+    font-size: 1.5rem;
+    margin: 10px 0px 0px 0px;
+    text-align: center;
+}
+
 .weather-input input {
     width: 100%;
     height: 46px;

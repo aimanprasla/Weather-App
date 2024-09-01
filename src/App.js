@@ -11,13 +11,17 @@ const App = () => {
   const [hasSearched, setHasSearched] = useState(false); // Track if a city has been searched
 
   const createWeatherCard = (cityName, weatherItem, index) => {
-    if (index === 0) {
+    const date = weatherItem.dt_txt.split(' ')[0];
+    const temp = ((weatherItem.main.temp - 273.15) * (9/5) + 32).toFixed(2);
+    const feelsLike = ((weatherItem.main.feels_like - 273.15) * (9/5) + 32).toFixed(2);
+
+    if (index === 0) { // Current weather card
       return (
         <div key={index} className="current-weather">
           <div className="details">
-            <h2>{`${cityName} (${weatherItem.dt_txt.split(" ")[0]})`}</h2>
-            <h4>{`Temperature: ${((weatherItem.main.temp - 273.15) * (9/5) + 32).toFixed(2)}°F`}</h4>
-            <h4>{`Feels Like: ${((weatherItem.main.feels_like - 273.15) * (9/5) + 32).toFixed(2)}°F`}</h4>
+            <h2>{`${cityName} (${date})`}</h2>
+            <h4>{`Temperature: ${temp}°F`}</h4>
+            <h4>{`Feels Like: ${feelsLike}°F`}</h4>
             <h4>{`Wind: ${weatherItem.wind.speed} M/S`}</h4>
           </div>
           <div className="icon">
@@ -26,13 +30,13 @@ const App = () => {
           </div>
         </div>
       );
-    } else {
+    } else { // Forecast weather card
       return (
         <li key={index} className="card">
-          <h2>{`(${weatherItem.dt_txt.split(" ")[0]})`}</h2>
+          <h2>{`(${date})`}</h2>
           <img src={`https://openweathermap.org/img/wn/${weatherItem.weather[0].icon}@2x.png`} alt="weather-icon" />
-          <h4>{`Temp: ${((weatherItem.main.temp - 273.15) * (9/5) + 32).toFixed(2)}°F`}</h4>
-          <h4>{`Feels Like: ${((weatherItem.main.feels_like - 273.15) * (9/5) + 32).toFixed(2)}°F`}</h4>
+          <h4>{`Temp: ${temp}°F`}</h4>
+          <h4>{`Feels Like: ${feelsLike}°F`}</h4>
           <h4>{`Wind: ${weatherItem.wind.speed} M/S`}</h4>
         </li>
       );
@@ -41,37 +45,27 @@ const App = () => {
 
   const getWeather = (cityName, lat, lon) => {
     const WEATHERAPPDETAILS_API_URL = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}`;
-    
+    const uniqueForecastDays = [];
+
     fetch(WEATHERAPPDETAILS_API_URL)
       .then(res => res.json())
       .then(data => {
-        const fiveDayForecast = [];
-        let currentDayIndex = -1;
-
-        // Iterate through the API data to find one forecast per day at noon
-        data.list.forEach((forecast) => {
+        const fiveDayForecast = data.list.filter(forecast => {
           const forecastDate = new Date(forecast.dt_txt).getDate();
-          if (fiveDayForecast.length === 0 || currentDayIndex !== forecastDate) {
-            currentDayIndex = forecastDate;
-            fiveDayForecast.push(forecast);
+          if (!uniqueForecastDays.includes(forecastDate)) {
+            uniqueForecastDays.push(forecastDate);
+            return true;
           }
+          return false;
         });
-
-
-        setWeatherData(null);
-        setForecastData([]);
-        setHasSearched(true); // Mark that a search has been made
-
-        fiveDayForecast.forEach((weatherItem, index) => {
-          if (index === 0) {
-            setWeatherData(createWeatherCard(cityName, weatherItem, index));
-          } else {
-            setForecastData(prevData => [...prevData, createWeatherCard(cityName, weatherItem, index)]);
-          }
-        });
+        
+        setWeatherData(createWeatherCard(cityName, fiveDayForecast[0], 0));
+        setForecastData(fiveDayForecast.slice(1).map((item, index) => createWeatherCard(cityName, item, index + 1)));
+        setHasSearched(true);
       })
       .catch(() => alert("Error with fetching city weather"));
   };
+  
 
   const getCoords = () => {
     if (!cityName) return;
@@ -144,6 +138,7 @@ const App = () => {
           <button className="search-button" onClick={getCoords}>Search</button>
           <div className="separator"></div>
           <button className="location-button" onClick={getUserCoords}>Use current location</button>
+          <h2>Latest Weather Information</h2>
         </div>
         <div className="weather-data">
           {/* Conditional rendering of dummy or fetched data */}
@@ -159,7 +154,7 @@ const App = () => {
                 </div>
               </div>
               <div className="days-forecast">
-                <h2>5-Day Forecast</h2>
+                <h2>4/5-Day Forecast</h2>
                 <ul className="weather-cards">
                   {/* Example of dummy data cards */}
                   <li className="card">
@@ -202,7 +197,7 @@ const App = () => {
                 {weatherData ? weatherData : <p>No current weather data available</p>}
               </div>
               <div className="days-forecast">
-                <h2>5-Day Forecast</h2>
+                <h2>4/5-Day Forecast</h2>
                 <ul className="weather-cards">
                   {forecastData.length > 0 ? forecastData : <p>No forecast data available</p>}
                 </ul>
